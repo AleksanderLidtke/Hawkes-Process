@@ -7,7 +7,7 @@ empirical BitCoin trade data data available at: @see https://github.com/jheusser
 
 @author: Alek
 @version: 1.0.0
-@since: 27 July 2014 19:38
+@since: 27 July 2014 20:38
 """
 
 import numpy as np
@@ -61,10 +61,13 @@ for t in np.linspace(eventTimes.min(), eventTimes.max(), eventTimes.size):
     conditionalIntensities.append( mu + np.array( [alpha*math.exp(-beta*(t-ti)) if t > ti else 0.0 for ti in eventTimes] ).sum() ) # Use eventTimes here as well to feel the influence of all the events that happen at the same time.
 
 " Compute integrals of the conditional intensity from t=0 to current time t_i. "
-IntegralsOfConditionalIntensity = np.zeros( len(eventTimes) )
+integralsOfConditionalIntensity = np.zeros( len(eventTimes) )
 for i in range( eventTimes.size): # Find integral of the conditional intensity at eery time, index i.
     for j in range(i): # Sum all the conditional intensities from the beginning of the analysis interval up to the current epoch i.
-        IntegralsOfConditionalIntensity[i] = IntegralsOfConditionalIntensity[i] + conditionalIntensities[j]
+        integralsOfConditionalIntensity[i] = integralsOfConditionalIntensity[i] + conditionalIntensities[j]
+
+interArrivalTimes = np.zeros( eventTimes.size ) # Times between consecutive events.
+interArrivalTimes[1:] = eventTimes[1:] - eventTimes[:-1] # First event is when we start counting time, no interarrival time for it.
 
 """ PLOT THE EMPIRICAL DATA AND FITTED CONDITIONAL INTENSITIES. """
 fig = matplotlib.pyplot.figure()
@@ -91,61 +94,80 @@ fittedPlot = matplotlib.lines.Line2D([],[],color='red', linestyle='solid', marke
 fig.legend([fittedPlot, empiricalPlot], [r'$Fitted\ data$', r'$Empirical\ data$'])
 matplotlib.pyplot.show()
 
-""" GENERATE THE QQ PLOT. """
-" Process the data and compute the quantiles. "
-orderStatistics=[]; orderStatistics2=[];
-for i in range( empirical_1min.values.size ): # Make sure all the NANs are filtered out and both arrays have the same size.
-    if not np.isnan( empirical_1min.values[i] ):
-        orderStatistics.append(empirical_1min.values[i])
-        orderStatistics2.append(conditionalIntensities[i])
-orderStatistics = np.array(orderStatistics); orderStatistics2 = np.array(orderStatistics2);
-
-orderStatistics.sort(axis=0) # Need to sort data in ascending order to make a QQ plot. orderStatistics is a column vector.
-orderStatistics2.sort()
-
-smapleQuantiles=np.zeros( orderStatistics.size ) # Quantiles of the empirical data.
-smapleQuantiles2=np.zeros( orderStatistics2.size ) # Quantiles of the data fitted using the Hawkes process.
-for i in range( orderStatistics.size ):
-    temp = int( 100*(i-0.5)/float(smapleQuantiles.size) ) # (i-0.5)/float(smapleQuantiles.size) th quantile. COnvert to % as expected by the numpy function.
-    if temp<0.0:
-        temp=0.0 # Avoid having -ve percentiles.
-    smapleQuantiles[i] = np.percentile(orderStatistics, temp)
-    smapleQuantiles2[i] = np.percentile(orderStatistics2, temp)
-
-" Make the simple plot of quantiles first. "
+""" PLOT THE DISTRIBUTION OF THE INTERARRIVAL TIMES IN THE RESCALED TIME. """
 fig2 = matplotlib.pyplot.figure()
-ax2 = fig2.gca(aspect="equal")
+ax2 = fig2.gca()
 
-fig2.suptitle(r"$Quantile\ plot$", fontsize=20)
+fig2.suptitle(r"$Distribution\ of\ interarrival\ times$", fontsize=20)
 ax2.grid(True)
-ax2.set_xlabel(r'$Sample\ fraction\ (\%)$',fontsize=labelsFontSize)
-ax2.set_ylabel(r'$Observations$',fontsize=labelsFontSize)
+ax2.set_xlabel(r'$Inter-arrival\ time$',fontsize=labelsFontSize)
 matplotlib.rc('xtick', labelsize=ticksFontSize) 
 matplotlib.rc('ytick', labelsize=ticksFontSize)
 
-distScatter = ax2.scatter(smapleQuantiles, orderStatistics, c='blue', marker='o') # If these are close to the straight line with slope line these points come from a normal distribution.
-
-ax2.plot(smapleQuantiles, smapleQuantiles, color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
-normalDistPlot = matplotlib.lines.Line2D([],[],color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
-     
-fig2.legend([normalDistPlot, distScatter], [r'$Normal\ distribution$', r'$Empirical\ data$'])
+distributionScatter = ax2.scatter(integralsOfConditionalIntensity, interArrivalTimes, c='blue', marker='x') # If these are close to the straight line with slope line these points come from a normal distribution.
+   
+fig2.legend([distributionScatter], [r'$Actual\ distribution$'])
 matplotlib.pyplot.show()
 
-" Now make a quantile-quantile (QQ) plot. "
-fig3 = matplotlib.pyplot.figure()
-ax3 = fig3.gca(aspect="equal")
+# =============================================================================
+# No longer needed, only kept in case it ever becomes useful.
+# =============================================================================
 
-fig3.suptitle(r"$Quantile\ -\ Quantile\ plot$", fontsize=20)
-ax3.grid(True)
-ax3.set_xlabel(r'$Empirical\ data$',fontsize=labelsFontSize)
-ax3.set_ylabel(r'$Data\ fitted\ with\ Hawkes\ distribution$',fontsize=labelsFontSize)
-matplotlib.rc('xtick', labelsize=ticksFontSize) 
-matplotlib.rc('ytick', labelsize=ticksFontSize)
-
-distributionScatter = ax3.scatter(smapleQuantiles, smapleQuantiles2, c='blue', marker='x') # If these are close to the straight line with slope line these points come from a normal distribution.
-
-ax3.plot(smapleQuantiles, smapleQuantiles, color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
-normalDistPlot2 = matplotlib.lines.Line2D([],[],color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
-     
-fig3.legend([normalDistPlot2, distributionScatter], [r'$Normal\ distribution$', r'$Comparison\ of\ datasets$'])
-matplotlib.pyplot.show()
+#""" GENERATE THE QQ PLOT THAT COMPARES EMPIRICAL AND ANALYTICAL DATA. """
+#" Process the data and compute the quantiles. "
+#orderStatistics=[]; orderStatistics2=[];
+#for i in range( empirical_1min.values.size ): # Make sure all the NANs are filtered out and both arrays have the same size.
+#    if not np.isnan( empirical_1min.values[i] ):
+#        orderStatistics.append(empirical_1min.values[i])
+#        orderStatistics2.append(conditionalIntensities[i])
+#orderStatistics = np.array(orderStatistics); orderStatistics2 = np.array(orderStatistics2);
+#
+#orderStatistics.sort(axis=0) # Need to sort data in ascending order to make a QQ plot. orderStatistics is a column vector.
+#orderStatistics2.sort()
+#
+#smapleQuantiles=np.zeros( orderStatistics.size ) # Quantiles of the empirical data.
+#smapleQuantiles2=np.zeros( orderStatistics2.size ) # Quantiles of the data fitted using the Hawkes process.
+#for i in range( orderStatistics.size ):
+#    temp = int( 100*(i-0.5)/float(smapleQuantiles.size) ) # (i-0.5)/float(smapleQuantiles.size) th quantile. COnvert to % as expected by the numpy function.
+#    if temp<0.0:
+#        temp=0.0 # Avoid having -ve percentiles.
+#    smapleQuantiles[i] = np.percentile(orderStatistics, temp)
+#    smapleQuantiles2[i] = np.percentile(orderStatistics2, temp)
+#
+#" Make the simple plot of quantiles first. "
+#fig2 = matplotlib.pyplot.figure()
+#ax2 = fig2.gca(aspect="equal")
+#
+#fig2.suptitle(r"$Quantile\ plot$", fontsize=20)
+#ax2.grid(True)
+#ax2.set_xlabel(r'$Sample\ fraction\ (\%)$',fontsize=labelsFontSize)
+#ax2.set_ylabel(r'$Observations$',fontsize=labelsFontSize)
+#matplotlib.rc('xtick', labelsize=ticksFontSize) 
+#matplotlib.rc('ytick', labelsize=ticksFontSize)
+#
+#distScatter = ax2.scatter(smapleQuantiles, orderStatistics, c='blue', marker='o') # If these are close to the straight line with slope line these points come from a normal distribution.
+#
+#ax2.plot(smapleQuantiles, smapleQuantiles, color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
+#normalDistPlot = matplotlib.lines.Line2D([],[],color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
+#     
+#fig2.legend([normalDistPlot, distScatter], [r'$Normal\ distribution$', r'$Empirical\ data$'])
+#matplotlib.pyplot.show()
+#
+#" Now make a quantile-quantile (QQ) plot. "
+#fig3 = matplotlib.pyplot.figure()
+#ax3 = fig3.gca(aspect="equal")
+#
+#fig3.suptitle(r"$Quantile\ -\ Quantile\ plot$", fontsize=20)
+#ax3.grid(True)
+#ax3.set_xlabel(r'$Empirical\ data$',fontsize=labelsFontSize)
+#ax3.set_ylabel(r'$Data\ fitted\ with\ Hawkes\ distribution$',fontsize=labelsFontSize)
+#matplotlib.rc('xtick', labelsize=ticksFontSize) 
+#matplotlib.rc('ytick', labelsize=ticksFontSize)
+#
+#distributionScatter = ax3.scatter(smapleQuantiles, smapleQuantiles2, c='blue', marker='x') # If these are close to the straight line with slope line these points come from a normal distribution.
+#
+#ax3.plot(smapleQuantiles, smapleQuantiles, color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
+#normalDistPlot2 = matplotlib.lines.Line2D([],[],color='red', linestyle='solid', marker=None, markerfacecolor='red', markersize=12)
+#     
+#fig3.legend([normalDistPlot2, distributionScatter], [r'$Normal\ distribution$', r'$Comparison\ of\ datasets$'])
+#matplotlib.pyplot.show()
