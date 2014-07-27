@@ -62,14 +62,9 @@ for t in np.linspace(eventTimes.min(), eventTimes.max(), eventTimes.size):
 
 " Compute integrals of the conditional intensity from t=0 to current time t_i. "
 IntegralsOfConditionalIntensity = np.zeros( len(eventTimes) )
-for i in range( len(eventTimes) ): # Find integral of the conditional intensity at eery time, index i.
-    for j in range(j): # Sum all the conditional intensities from the beginning of the analysis interval up to the current epoch i.
-        print j
+for i in range( eventTimes.size): # Find integral of the conditional intensity at eery time, index i.
+    for j in range(i): # Sum all the conditional intensities from the beginning of the analysis interval up to the current epoch i.
         IntegralsOfConditionalIntensity[i] = IntegralsOfConditionalIntensity[i] + conditionalIntensities[j]
-
-matplotlib.pyplot.figure()
-matplotlib.pyplot.scatter(range(IntegralsOfConditionalIntensity.size), IntegralsOfConditionalIntensity)
-matplotlib.pyplot.show()
 
 """ PLOT THE EMPIRICAL DATA AND FITTED CONDITIONAL INTENSITIES. """
 fig = matplotlib.pyplot.figure()
