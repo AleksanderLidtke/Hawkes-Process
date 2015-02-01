@@ -5,9 +5,12 @@ Created on Wed Jul 16 22:04:38 2014
 Analyse a stochastic process using a Hawkes process' model. Make a comparison to
 empirical BitCoin trade data data available at: @see https://github.com/jheusser/hawkes/tree/master/data
 
-@author: Alek
-@version: 1.0.0
-@since: 27 July 2014 20:38
+@author: Alek, Artur
+@version: 1.0.1
+@since:  1 Feb 2014 18:14
+
+CHANGELOG
+01 Feb 2015 - 1.0.1 - Artur - Added the changelog for multiple authors.
 """
 
 import numpy as np
